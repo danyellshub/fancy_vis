@@ -1,8 +1,10 @@
 ---
 title: "Rain Movies"
-author: "Matthew Ross"
+author: "Danielle Reimanis"
 date: "11/7/2019"
 output: html_document
+editor_options: 
+  chunk_output_type: console
 ---
 
 # Using R to make movies
@@ -56,7 +58,7 @@ af_p <- riem_measures(station='AFF',date_start = '2018-10-01',
 fc <- riem_measures(station='FNL',date_start = '2018-10-01',
                       date_end = '2019-09-30')
 
-View(fc)
+#View(fc)
 
 ```
 
@@ -93,9 +95,7 @@ p1 <- ggplot(slice_p,aes(x=date,y=mean_temp,color=station,group=station)) +
   labs(title = 'Date: {frame_time}', x='Date',y= 'Mean Temp (f)') + 
   transition_time(date) 
 
-
 animate(p1, nframes=nrow(slice_p))
-
 
 ```
 
@@ -112,7 +112,6 @@ p2 <- ggplot(daily_p,aes(x=date,y=mean_temp,color=station,group=station)) +
 
 
 animate(p2, nframes=nrow(daily_p))
-
 
 
 ```
@@ -148,8 +147,6 @@ tm_shape(co) +
 
 ```{r}
 
-
-  
 basemap <- tm_shape(co) + 
     tm_polygons() + 
   tm_shape(co_elev) +
@@ -165,7 +162,7 @@ basemap <- tm_shape(co) +
 full_dates <- unique(sf_p$date)
 
 sequence <- 1:length(full_dates)
-saveVideo({
+saveGIF({
   for(i in sequence){
   sub_sf <- sf_p %>%
     filter(date == full_dates[i]) %>%
@@ -187,11 +184,10 @@ saveVideo({
                         col=c('red','white'),
                         title='Station'))
   }
-},movie.name = 'precip_flash.mp4',
+},movie.name = 'precip_flash.gif',
   interval=0.05,
   ani.width=1000,
   ani.height=800)
-
 
 ```
 
@@ -233,8 +229,6 @@ daily_sf <- daily_p %>%
   st_as_sf(.,coords=c('lon','lat'),crs=4326,remove=F)
 
 
-
-
 full_dates <- unique(daily_sf$date)
 
 sequence <- 1:length(full_dates)
@@ -270,9 +264,43 @@ saveVideo({
 
 ```
 
-
-
 # In Class work.
+
+## GGanimate
+
+Make a video showing the correlation between Air Force Academy and Fort Collins
+between the min, mean, and max temps. The movie should cover the full year. 
+
+```{r}
+
+daily_temp_long <- daily_p %>%
+  select(date, station, mean_temp, min_temp, max_temp)%>%
+  gather(.,
+         key = "type",
+         value= "temp",
+         -station, -date)
+
+daily_wide <- daily_temp_long %>%
+  spread(., 
+         key = "station",
+         value = "temp")
+
+# slice_wide <- daily_wide %>%
+#   slice(1:50)
+
+p3 <- ggplot(daily_wide,
+       aes(x=AFF, y=FNL, color=type,group=type))+
+  geom_point() +
+  geom_abline()+
+  geom_line() +
+  labs(x = 'Air Force Temperature (°C)', y= 'Fort Collins Temperature (°C)')+
+  transition_reveal(date) +
+  theme(legend.title=element_blank())
+  
+animate(p3, nframes=50)
+  
+```
+
 
 ## Make a video of mean temperature differences for the full Colorado dataset
 (you need to download this [here](https://www.dropbox.com/s/s7zt18elgoh8q2b/DailyP.RData?dl=0)) first.
@@ -282,5 +310,7 @@ style (change the background, add other layers (like counties or cities)), etc..
 
 ```{r}
 load('DailyP.RData')
+
+
 ```
 
