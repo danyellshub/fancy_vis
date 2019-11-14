@@ -24,6 +24,8 @@ library(lubridate)
 library(ggthemes)
 library(tmap)
 library(sf)
+library(tigris)
+library(raster)
 theme_set(theme_few()) # Set ggplot theme
 
 
@@ -228,7 +230,6 @@ load('DailyP.RData')
 daily_sf <- daily_p %>%
   st_as_sf(.,coords=c('lon','lat'),crs=4326,remove=F)
 
-
 full_dates <- unique(daily_sf$date)
 
 sequence <- 1:length(full_dates)
@@ -285,14 +286,10 @@ daily_wide <- daily_temp_long %>%
          key = "station",
          value = "temp")
 
-# slice_wide <- daily_wide %>%
-#   slice(1:50)
-
 p3 <- ggplot(daily_wide,
-       aes(x=AFF, y=FNL, color=type,group=type))+
+       aes(x=AFF, y=FNL, color=type,group=seq_along(FNL)))+
   geom_point() +
   geom_abline()+
-  geom_line() +
   labs(x = 'Air Force Temperature (°C)', y= 'Fort Collins Temperature (°C)')+
   transition_reveal(date) +
   theme(legend.title=element_blank())
@@ -308,8 +305,67 @@ animate(p3, nframes=50)
 The video should look similar to the one above, but I want you to choose your own 
 style (change the background, add other layers (like counties or cities)), etc...
 
+##  Basemap
+```{r}
+usa <- us_states()
+co <- usa %>%
+  filter(name == 'Colorado')
+
+co_elev <- elevatr::get_elev_raster(co,z=6)
+ 
+co1 <- counties(state="Colorado", cb=TRUE)
+
+co_elev_clip <- crop(co_elev, co1)
+
+co_reprj <- spTransform(co1, crs(co_elev))
+
+basemap_2 <- tm_shape(co_elev_clip)+
+  tm_raster(style='cont', 
+            palette = 'Greys',
+            title = "Elevation (m)")+
+  tm_shape(co_reprj)+
+  tm_borders("black")
+
+```
+
+## Animation
 ```{r}
 load('DailyP.RData')
+
+mean_temp <- daily_p %>%
+  select(1:5)
+
+mean_slice <- mean_temp %>%
+  slice(1:200)
+
+slice_sf <- mean_slice %>%
+  st_as_sf(., coords=c('lon','lat'), crs=4326,remove=F)
+
+full_dates_slice <- unique(slice_sf$date)
+
+sequence <- 1:length(full_dates_slice)
+saveGIF({
+  for(i in sequence){
+  subset_sf <- slice_sf %>%
+    filter(date == full_dates_slice[i])
+  
+  map2 <- basemap_2 + tm_shape(subset_sf)+
+    tm_dots(title.size='Mean Temperature (°C)',
+            col='mean_temp',
+            size='mean_temp',
+            scale=1.5,
+            style='cont',
+            palette='Reds')
+  
+  print(map2 + 
+        tm_layout(title=full_dates_slice[i],
+        legend.position=c(0.7,0.2)))
+  }
+},movie.name = 'mean_temp_flash_all.gif',
+  interval=0.12,
+  ani.width=1000,
+  ani.height=800)
+
 
 
 ```
