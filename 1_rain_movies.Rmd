@@ -275,7 +275,7 @@ between the min, mean, and max temps. The movie should cover the full year.
 ```{r}
 
 daily_temp_long <- daily_p %>%
-  select(date, station, mean_temp, min_temp, max_temp)%>%
+  dplyr::select(date, station, mean_temp, min_temp, max_temp)%>%
   gather(.,
          key = "type",
          value= "temp",
@@ -294,7 +294,7 @@ p3 <- ggplot(daily_wide,
   transition_reveal(date) +
   theme(legend.title=element_blank())
   
-animate(p3, nframes=50)
+gganimate::animate(p3, nframes=50)
   
 ```
 
@@ -321,7 +321,7 @@ co_reprj <- spTransform(co1, crs(co_elev))
 
 basemap_2 <- tm_shape(co_elev_clip)+
   tm_raster(style='cont', 
-            palette = 'Greys',
+            palette = 'Blacks',
             title = "Elevation (m)")+
   tm_shape(co_reprj)+
   tm_borders("black")
@@ -333,7 +333,7 @@ basemap_2 <- tm_shape(co_elev_clip)+
 load('DailyP.RData')
 
 mean_temp <- daily_p %>%
-  select(1:5)
+  dplyr::select(1:5)
 
 mean_slice <- mean_temp %>%
   slice(1:200)
